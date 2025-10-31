@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Map from "./components/Map";
 import HeadwayChart from "./components/HeadwayChart";
 import FeedSelector from "./components/FeedSelector";
@@ -23,7 +23,7 @@ export type HeadwayRecord = {
 };
 
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "",
 });
 
 function useFeeds() {
@@ -52,12 +52,44 @@ function useHeadways(feedId?: string, dayType?: string) {
 function App() {
   const { data: feeds = [] } = useFeeds();
   const [selectedFeed, setSelectedFeed] = useState<string | undefined>();
+  const [latestFeedId, setLatestFeedId] = useState<string | null>(null);
+  const [latestFeedError, setLatestFeedError] = useState<string | null>(null);
+  const [loadingLatestFeed, setLoadingLatestFeed] = useState(true);
   const [selectedDayType, setSelectedDayType] = useState<string | undefined>();
 
   const { data: headways = [], isLoading: loadingHeadways } = useHeadways(
     selectedFeed,
     selectedDayType
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingLatestFeed(true);
+    setLatestFeedError(null);
+    fetch("/api/latest_feed")
+      .then((response) => response.json())
+      .then((data) => {
+        if (cancelled) return;
+        setLatestFeedId(data.feedId ?? null);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setLatestFeedError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoadingLatestFeed(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedFeed && latestFeedId) {
+      setSelectedFeed(latestFeedId);
+    }
+  }, [latestFeedId, selectedFeed]);
 
   const dayTypes = useMemo(() => {
     const unique = new Map<string, string>();
@@ -93,7 +125,15 @@ function App() {
       </header>
       <main className="grid flex-1 grid-cols-2 gap-4 overflow-hidden p-4">
         <section className="rounded-xl border border-slate-800 bg-slate-900/60">
-          <Map feedId={selectedFeed} />
+          {latestFeedError ? (
+            <div className="p-4 text-sm text-red-300">
+              Erreur lors de la récupération du feed: {latestFeedError}
+            </div>
+          ) : loadingLatestFeed ? (
+            <div className="p-4 text-sm text-slate-300">Chargement du feed…</div>
+          ) : (
+            <Map feedId={selectedFeed} />
+          )}
         </section>
         <section className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/60">
           <div className="border-b border-slate-800 px-5 py-3">

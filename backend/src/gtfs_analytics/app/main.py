@@ -14,7 +14,7 @@ def create_app():  # type: ignore[override]
     if FastAPI is None:
         raise RuntimeError("FastAPI is not installed. Install fastapi to use the web API layer.")
 
-    from .api.router import router  # Imported lazily to avoid FastAPI dependency during tests
+    from .api.router import local_router, router  # Imported lazily to avoid FastAPI dependency during tests
 
     application = FastAPI(title="GTFS Analytics Toolkit", version="0.1.0")
     if CORSMiddleware is not None:
@@ -27,6 +27,7 @@ def create_app():  # type: ignore[override]
         )
 
     application.include_router(router)
+    application.include_router(local_router)
 
     @application.get("/health")
     async def healthcheck() -> dict[str, str]:

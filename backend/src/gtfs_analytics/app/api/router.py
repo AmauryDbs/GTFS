@@ -16,6 +16,25 @@ from ..services.headways import compute_headways, compute_service_kpis
 from ..services.ingest import IngestionResult, ingest_gtfs
 
 router = APIRouter()
+local_router = APIRouter(prefix="/api", tags=["local"])
+
+
+def _available_feed_ids(settings: Settings) -> List[str]:
+    feeds_dir = settings.data_dir / "feeds"
+    if not feeds_dir.exists():
+        return []
+    return sorted([path.name for path in feeds_dir.iterdir() if path.is_dir()])
+
+
+@local_router.get("/feeds")
+async def list_local_feed_ids(settings: Settings = Depends(get_settings)) -> dict[str, List[str]]:
+    return {"feeds": _available_feed_ids(settings)}
+
+
+@local_router.get("/latest_feed")
+async def latest_local_feed(settings: Settings = Depends(get_settings)) -> dict[str, Optional[str]]:
+    feeds = _available_feed_ids(settings)
+    return {"feedId": feeds[-1] if feeds else None}
 
 
 def _feed_dir(feed_id: str, settings: Settings) -> Path:
@@ -124,4 +143,4 @@ async def export_artifact(artifact: str, settings: Settings = Depends(get_settin
     return FileResponse(path)
 
 
-__all__ = ["router"]
+__all__ = ["router", "local_router"]

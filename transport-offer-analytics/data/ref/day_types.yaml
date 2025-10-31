@@ -1,0 +1,12 @@
+# Règles simples MVP (peuvent être enrichies)
+defaults:
+  monday: "Semaine"
+  tuesday: "Semaine"
+  wednesday: "Semaine"
+  thursday: "Semaine"
+  friday: "Semaine"
+  saturday: "Samedi"
+  sunday: "Dimanche"
+overrides:
+  # ex: "2025-12-25": "Ferie"
+  # ex: "vacances_zoneB_2025-02-10..2025-02-24": "Vacances"

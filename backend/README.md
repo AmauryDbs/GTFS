@@ -8,7 +8,7 @@ python scripts/compute_headways.py <hash_feed>
 python scripts/compute_accessibility.py <hash_feed> chemin/vers/zones.geojson
 ```
 
-Par défaut, l'application lit et écrit ses artefacts sous `data/` à la racine du dépôt. Utilisez la variable d'environnement `GTFS_DATA_DIR` pour modifier cet emplacement. Pour l'API :
+Par défaut, l'application lit et écrit ses artefacts sous `data/` à la racine du dépôt. L'ingestion accepte les feeds sans `calendar.txt` en se basant sur `calendar_dates.txt` lorsqu'il est présent. Utilisez la variable d'environnement `GTFS_DATA_DIR` pour modifier cet emplacement. Pour l'API :
 
 ```bash
 python -m pip install fastapi uvicorn  # optionnel, seulement pour la couche API
@@ -25,7 +25,7 @@ python scripts/compute_headways.py <feed_hash>
 python scripts/compute_accessibility.py <feed_hash> path/to/zones.geojson
 ```
 
-The application reads and writes artefacts under the `data/` directory at the repository root by default. Override with the `GTFS_DATA_DIR` environment variable if needed. To launch the API:
+The application reads and writes artefacts under the `data/` directory at the repository root by default. The ingestion tolerates feeds missing `calendar.txt` by falling back to `calendar_dates.txt` when available. Override with the `GTFS_DATA_DIR` environment variable if needed. To launch the API:
 
 ```bash
 python -m pip install fastapi uvicorn  # optional, only for the API layer

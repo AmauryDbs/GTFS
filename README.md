@@ -55,6 +55,21 @@ Dans certains environnements (par exemple sur cette plateforme d'entraînement),
 
 Cette approche conserve un historique propre et facilite le partage une fois la connexion rétablie.
 
+### Publier votre travail sur GitHub
+
+Si vous disposez d'un accès réseau et souhaitez pousser ce projet vers un dépôt distant :
+
+```bash
+git init
+git add .
+git commit -m "chore: init projet"
+git branch -M main
+git remote add origin https://github.com/<votre-compte>/<nom-du-projet>.git
+git push -u origin main
+```
+
+Adaptez l'URL pour utiliser SSH (`git@github.com:...`) si vous avez configuré des clés.
+
 ### Licence
 
 MIT.
@@ -113,6 +128,21 @@ In restricted sandboxes there is no configured Git `remote` and outbound traffic
 3. Apply those artifacts on another machine that can reach the canonical repository.
 
 This keeps history auditable even when direct pushes are impossible.
+
+### Publishing to GitHub
+
+Once you regain network access and want to push this code to a hosted repository:
+
+```bash
+git init
+git add .
+git commit -m "chore: init project"
+git branch -M main
+git remote add origin https://github.com/<your-account>/<project-name>.git
+git push -u origin main
+```
+
+Swap the remote URL for the SSH form (`git@github.com:...`) if you prefer key-based authentication.
 
 ### License
 

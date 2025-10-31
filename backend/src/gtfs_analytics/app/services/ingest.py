@@ -7,7 +7,7 @@ import hashlib
 import json
 import zipfile
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional
 
@@ -15,12 +15,9 @@ from ..core.config import get_settings
 from .catalog import DatasetRegistry
 
 GTFS_REQUIRED_FILES = [
-    "agency.txt",
-    "routes.txt",
     "trips.txt",
     "stop_times.txt",
     "stops.txt",
-    "calendar.txt",
 ]
 
 
@@ -97,6 +94,47 @@ def _build_day_types(calendar: List[Dict[str, object]]) -> List[Dict[str, object
     return records
 
 
+def _fallback_day_types(trips: List[Dict[str, str]]) -> List[Dict[str, object]]:
+    service_ids = sorted({row.get("service_id") for row in trips if row.get("service_id")})
+    if not service_ids:
+        return []
+    return [
+        {
+            "day_type_id": "ALL",
+            "label": "Jour-type",
+            "service_ids": service_ids,
+        }
+    ]
+
+
+def _compute_validity(
+    calendar: List[Dict[str, object]],
+    calendar_dates: List[Dict[str, str]],
+) -> tuple[Optional[date], Optional[date]]:
+    if calendar:
+        start = min(row["start_date"] for row in calendar)
+        end = max(row["end_date"] for row in calendar)
+        return start, end
+
+    dates = []
+    for row in calendar_dates:
+        date_str = row.get("date")
+        if not date_str:
+            continue
+        try:
+            service_date = datetime.strptime(date_str, "%Y%m%d").date()
+        except ValueError:
+            continue
+        exception_type = str(row.get("exception_type", "1") or "1")
+        if exception_type == "1":
+            dates.append(service_date)
+
+    if dates:
+        return min(dates), max(dates)
+
+    return None, None
+
+
 def ingest_gtfs(zip_path: Path, *, output_root: Optional[Path] = None) -> IngestionResult:
     """Ingest a GTFS feed, convert to JSON snapshots, and update the dataset registry."""
 
@@ -115,18 +153,23 @@ def ingest_gtfs(zip_path: Path, *, output_root: Optional[Path] = None) -> Ingest
     derived_dir.mkdir(parents=True, exist_ok=True)
 
     with zipfile.ZipFile(zip_path) as archive:
-        missing = [name for name in GTFS_REQUIRED_FILES if name not in archive.namelist()]
+        names = archive.namelist()
+        missing = [name for name in GTFS_REQUIRED_FILES if name not in names]
         if missing:
             raise ValueError(f"Missing GTFS files: {', '.join(missing)}")
 
         tables: Dict[str, List[Dict[str, str]]] = {}
-        for name in archive.namelist():
+        for name in names:
             if not name.endswith(".txt"):
                 continue
             tables[name[:-4]] = _read_gtfs_table(archive, name)
 
-    calendar = _normalise_calendar(tables["calendar"])
-    day_types = _build_day_types(calendar)
+    calendar_rows = tables.get("calendar") or []
+    calendar = _normalise_calendar(calendar_rows) if calendar_rows else []
+    if calendar:
+        day_types = _build_day_types(calendar)
+    else:
+        day_types = _fallback_day_types(tables.get("trips", []))
 
     for table_name, rows in tables.items():
         _write_json(raw_dir / f"{table_name}.json", rows)
@@ -148,14 +191,13 @@ def ingest_gtfs(zip_path: Path, *, output_root: Optional[Path] = None) -> Ingest
 
     agency = tables.get("agency") or []
     provider = agency[0].get("agency_name") if agency else None
-    validity_start = min(row["start_date"] for row in calendar)
-    validity_end = max(row["end_date"] for row in calendar)
+    validity_start, validity_end = _compute_validity(calendar, tables.get("calendar_dates") or [])
     dim_feed = [
         {
             "feed_id": feed_hash,
             "provider": provider,
-            "validity_start": validity_start.isoformat(),
-            "validity_end": validity_end.isoformat(),
+            "validity_start": validity_start.isoformat() if validity_start else None,
+            "validity_end": validity_end.isoformat() if validity_end else None,
             "version_hash": feed_hash,
         }
     ]
@@ -165,8 +207,8 @@ def ingest_gtfs(zip_path: Path, *, output_root: Optional[Path] = None) -> Ingest
         {
             "feed_id": feed_hash,
             "provider": provider,
-            "validity_start": validity_start.isoformat(),
-            "validity_end": validity_end.isoformat(),
+            "validity_start": validity_start.isoformat() if validity_start else None,
+            "validity_end": validity_end.isoformat() if validity_end else None,
             "version_hash": feed_hash,
             "source_path": str(zip_path.resolve()),
         }

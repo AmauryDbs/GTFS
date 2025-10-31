@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
+
 try:
     from fastapi import FastAPI
     from fastapi.middleware.cors import CORSMiddleware
 except Exception:  # pragma: no cover - FastAPI optional in tests
     FastAPI = None  # type: ignore
     CORSMiddleware = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency when serving the SPA
+    from starlette.staticfiles import StaticFiles
+except Exception:  # pragma: no cover - StaticFiles optional in tests
+    StaticFiles = None  # type: ignore
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app():  # type: ignore[override]
@@ -28,6 +39,18 @@ def create_app():  # type: ignore[override]
 
     application.include_router(router)
     application.include_router(local_router)
+
+    if StaticFiles is not None:
+        frontend_dist = Path(__file__).resolve().parents[5] / "frontend" / "dist"
+        if frontend_dist.exists() and any(frontend_dist.iterdir()):
+            application.mount(
+                "/",
+                StaticFiles(directory=str(frontend_dist), html=True),
+                name="frontend",
+            )
+            logger.info("Mounted frontend build from %s", frontend_dist)
+        else:
+            logger.debug("Frontend build directory not found at %s; skipping mount", frontend_dist)
 
     @application.get("/health")
     async def healthcheck() -> dict[str, str]:

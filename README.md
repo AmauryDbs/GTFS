@@ -21,7 +21,7 @@ python scripts/compute_headways.py <hash_feed> --data-dir data
 python scripts/compute_accessibility.py <hash_feed> chemin/vers/zones.geojson --data-dir data
 ```
 
-Ces commandes génèrent des instantanés JSON et mettent à jour l'arborescence `data/`. Vous pouvez surcharger ce répertoire via la variable d'environnement `GTFS_DATA_DIR`.
+Ces commandes génèrent des instantanés JSON et mettent à jour l'arborescence `data/`. L'ingestion tolère les jeux de données dépourvus de `calendar.txt` en déduisant les jours de service à partir de `calendar_dates.txt` lorsqu'il est fourni. Vous pouvez surcharger ce répertoire via la variable d'environnement `GTFS_DATA_DIR`.
 
 ### API FastAPI optionnelle
 
@@ -96,6 +96,8 @@ python scripts/ingest_gtfs.py path/to/feed.zip --output data
 python scripts/compute_headways.py <feed_hash> --data-dir data
 python scripts/compute_accessibility.py <feed_hash> path/to/zones.geojson --data-dir data
 ```
+
+The ingestion step now copes with feeds that omit `calendar.txt` by inferring service patterns from `calendar_dates.txt` when it is present.
 
 ### Optional FastAPI API
 

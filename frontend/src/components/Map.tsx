@@ -5,7 +5,8 @@ interface MapProps {
   feedId?: string;
 }
 
-function Map({ feedId }: MapProps) {
+function Map(props?: MapProps) {
+  const feedId = props?.feedId;
   return (
     <MapLibreMap
       mapStyle="https://demotiles.maplibre.org/style.json"

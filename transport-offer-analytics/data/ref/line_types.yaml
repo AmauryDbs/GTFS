@@ -1,0 +1,12 @@
+# Mapping libre par route_id ou par route_type GTFS
+by_route_type:
+  "0": "Tram"
+  "1": "Métro"
+  "2": "Rail"
+  "3": "Bus"
+  "4": "Ferry"
+  "5": "Cable"
+  "6": "Telecabin"
+  "7": "Funiculaire"
+by_route_id:
+  # ex: "Ligne_1": "BHNS"

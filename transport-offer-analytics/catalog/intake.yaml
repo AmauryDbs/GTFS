@@ -1,0 +1,9 @@
+datasets:
+  gtfs_core:
+    description: Tables GTFS normalisées en Parquet
+    path: ${DATA_DIR}/parquet/core
+    format: parquet
+  geo_mesh:
+    description: Découpage territorial principal (GeoParquet ou GeoPackage)
+    path: ${DATA_DIR}/parquet/geo/mesh.parquet
+    format: geoparquet
